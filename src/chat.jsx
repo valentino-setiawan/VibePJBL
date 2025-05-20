@@ -115,7 +115,9 @@ function Chat() {
         <div className="historyBar">
           <h2>Conversation History:</h2>
           {history.map((msg, index) => (
-            <div className="chatMsg" style={{background: msg.role === user ? "#e9f5ff" : "#f9f9f9" }} key={index}>
+            <div className="chatMsg" 
+            // style={{background: msg.role === user ? "#e9f5ff" : "#f9f9f9" }}
+             key={index}>
               <strong>{msg.role === 'user' ? 'You:' : 'AI:'}</strong> {msg.text}
             </div>
           ))}

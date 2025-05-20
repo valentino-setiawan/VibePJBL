@@ -71,7 +71,7 @@ app.post('/api/chat', async (req, res) => {
     }
 
     const contents = [];
-
+// 
     if (history && Array.isArray(history)) {
       history.forEach(msg => {
         if (msg.role && msg.text) {
