@@ -28,9 +28,11 @@ if (!GEMINI_API_KEY) {
 
 // Initialize GoogleGenAI
 const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY }); // Use apiKey in config object
-const model = genAI.getGenerativeModel({
-  model: "gemini-2.0-flash", // Use "gemini-1.5-flash" or "gemini-1.5-pro" for system instructions
-});
+async function main() {
+  const response = await genAI.models.generateContent({
+    model: 'gemini-2.0-flash'
+  })
+}
 
 // Define your system instruction
 const systemInstruction = "You are a psychiatrist who answers with the best description possible and comforting the user.";
