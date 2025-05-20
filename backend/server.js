@@ -1,40 +1,43 @@
-// Import necessary modules
+// server.js
+// You might need to add "type": "module" to your package.json for this to work
+// or rename your file to server.mjs
+
+import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
 const express = require('express');
 const cors = require('cors');
-const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
-require('dotenv').config(); // To load environment variables from .env file
+require('dotenv').config();
 
 // Initialize Express app
 const app = express();
 const port = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors()); // Enable Cross-Origin Resource Sharing
-app.use(express.json()); // Parse JSON request bodies
+app.use(cors());
+app.use(express.json());
 
 // Get API Key from environment variables
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 if (!GEMINI_API_KEY) {
-  console.error("Error: GEMINI_API_KEY is not defined. Please set it in your .env file.");
-  process.exit(1); // Exit if API key is not found
+  console.error("API KEY not found. Tell the programmer to fix.");
+  process.exit(1);
 }
 
-// Initialize GoogleGenerativeAI
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+// Initialize GoogleGenAI
+const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY }); // Use apiKey in config object
 const model = genAI.getGenerativeModel({
-  model: "gemini-2.0-flash", // Or use "gemini-pro" or other available models
+  model: "gemini-2.0-flash", // Use "gemini-1.5-flash" or "gemini-1.5-pro" for system instructions
 });
 
 // Define your system instruction
-const systemInstruction = "You are a psychiatrist who answer with the best description possible with limitation of 30 words";
+const systemInstruction = "You are a psychiatrist who answers with the best description possible and comforting the user.";
 
 // Generation configuration (optional, for more control)
 const generationConfig = {
-  temperature: 0.9, // Controls randomness. Higher values (e.g., 1.0) are more creative, lower (e.g., 0.2) are more deterministic.
-  topK: 1,          // Selects the K most probable tokens.
-  topP: .8,          // Selects tokens from the most probable tokens whose cumulative probability exceeds P.
-  maxOutputTokens: 2048, // Maximum number of tokens to generate.
+  temperature: 0.9,
+  topK: 1,
+  topP: .8,
+  maxOutputTokens: 30,
 };
 
 // Safety settings (optional, to filter harmful content)
@@ -61,17 +64,15 @@ const safetySettings = [
 // API endpoint for chat
 app.post('/api/chat', async (req, res) => {
   try {
-    const { prompt, history } = req.body; // 1. Destructure incoming data
+    const { prompt, history } = req.body;
 
-    if (!prompt) { // 2. Basic validation
+    if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
     }
 
-    // Prepare content for the API call
-    const contents = []; // 3. Initialize content array
+    const contents = [];
 
-    // Add historical messages if provided
-    if (history && Array.isArray(history)) { // 4. Process chat history
+    if (history && Array.isArray(history)) {
       history.forEach(msg => {
         if (msg.role && msg.text) {
           contents.push({
@@ -82,10 +83,8 @@ app.post('/api/chat', async (req, res) => {
       });
     }
 
-    // Add the current user prompt
-    contents.push({ role: "user", parts: [{ text: prompt }] }); // 5. Add current prompt
+    contents.push({ role: "user", parts: [{ text: prompt }] });
 
-    // 6. Call the Gemini API with all configurations
     const result = await model.generateContent({
         contents: contents,
         generationConfig,
@@ -93,16 +92,15 @@ app.post('/api/chat', async (req, res) => {
         systemInstruction: { parts: [{ text: systemInstruction }] },
     });
 
-    if (result.response) { // 7. Process Gemini's response
+    if (result.response) {
       const responseText = result.response.text();
-      res.json({ response: responseText }); // 8. Send successful JSON response
+      res.json({ response: responseText });
     } else {
-      // 9. Handle cases where Gemini API doesn't return expected structure
       console.error('Gemini API did not return a valid response structure:', result);
       res.status(500).json({ error: 'Failed to get a response from Gemini. The response might have been blocked due to safety settings or other reasons.' });
     }
 
-  } catch (error) { // 10. Catch and handle any errors during the process
+  } catch (error) {
     console.error('Error calling Gemini API:', error);
     if (error.response && error.response.data) {
         console.error('Gemini API Error Details:', error.response.data);
