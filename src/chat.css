@@ -1,0 +1,38 @@
+.chatPage {
+    max-width: 800px; 
+    margin: 50px auto; 
+    padding: 20px; 
+    border: 1px solid #ccc; 
+    border-Radius: 8px; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1)
+} 
+
+.formArea {
+    width: 100%; 
+    padding: 10px;
+    margin-Bottom: 10px;
+    border-Radius: 4px; 
+    border: 1px solid #ddd
+}
+
+.submitBtn {
+    padding: 10px 20px; 
+    background-Color: #007bff; 
+    color: white; 
+    border: none;
+    border-Radius: 4px;
+    cursor: pointer
+}
+
+.historyBar {
+    margin-Top: 20px; 
+    border-Top: 1px solid #eee; 
+    padding-Top: 15px
+}
+
+.chatMsg {
+    margin-Bottom: 10px; 
+    padding: 8px; 
+    border-Radius: 4px
+
+}

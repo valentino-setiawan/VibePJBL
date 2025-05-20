@@ -1,17 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, Routes, Route } from 'react-router-dom'
+import Chat from './chat'
 import './App.css'
-
-// Create a new Chat component (or import it if in separate file)
-function Chat() {
-  return (
-    <div className="chat-container">
-      <h1>Vibe AI Chat</h1>
-      {/* Add your chat interface here */}
-      <Link to="/" className="back-button">Back to Home</Link>
-    </div>
-  )
-}
 
 function App() {
   return (
