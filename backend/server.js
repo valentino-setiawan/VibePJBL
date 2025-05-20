@@ -3,9 +3,12 @@
 // or rename your file to server.mjs
 
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+
+// Setup
+dotenv.config();
 
 // Initialize Express app
 const app = express();
