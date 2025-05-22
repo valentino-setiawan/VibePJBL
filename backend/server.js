@@ -26,26 +26,21 @@ if (!GEMINI_API_KEY) {
   process.exit(1);
 }
 
-// Initialize GoogleGenAI
-const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY }); // Use apiKey in config object
-async function main() {
-  const response = await genAI.models.generateContent({
-    model: 'gemini-2.0-flash'
-  })
-}
+const ai = new GoogleGenAI({
+    apiKey: GEMINI_API_KEY,
+    apiVersion: 'v1alpha'
+});
 
-// Define your system instruction
-const systemInstruction = "You are a psychiatrist who answers with the best description possible and comforting the user.";
+const systemInstructionText = "You are a psychiatrist who answers with the best description possible and comforting the user.";
 
-// Generation configuration (optional, for more control)
 const generationConfig = {
-  temperature: 0.9,
-  topK: 1,
-  topP: .8,
-  maxOutputTokens: 30,
+  temperature: 0.9, // Controls randomness
+  topK: 1,          // Consider the top K tokens
+  topP: 0.8,        // Nucleus sampling: consider tokens with cumulative probability >= topP
+  maxOutputTokens: 2048, // Max length of the response
 };
 
-// Safety settings (optional, to filter harmful content)
+// Safety settings
 const safetySettings = [
   {
     category: HarmCategory.HARM_CATEGORY_HARASSMENT,
@@ -65,8 +60,6 @@ const safetySettings = [
   },
 ];
 
-
-// API endpoint for chat
 app.post('/api/chat', async (req, res) => {
   try {
     const { prompt, history } = req.body;
@@ -75,43 +68,60 @@ app.post('/api/chat', async (req, res) => {
       return res.status(400).json({ error: 'Prompt is required' });
     }
 
-    const contents = [];
-// 
+    // Siapkan history dalam format [{ role, parts: [{ text }] }]
+    const formattedHistory = [];
     if (history && Array.isArray(history)) {
-      history.forEach(msg => {
-        if (msg.role && msg.text) {
-          contents.push({
-            role: msg.role,
-            parts: [{ text: msg.text }]
+      for (const msg of history) {
+        if (msg.sender && msg.text) {
+          formattedHistory.push({
+            role: msg.sender === 'user' ? 'user' : 'model',
+            parts: [{ text: msg.text }],
           });
+        } else if (msg.role && msg.parts) {
+          // Jika history sudah diformat
+          formattedHistory.push(msg);
         }
-      });
+      }
     }
 
-    contents.push({ role: "user", parts: [{ text: prompt }] });
-
-    const result = await model.generateContent({
-        contents: contents,
-        generationConfig,
-        safetySettings,
-        systemInstruction: { parts: [{ text: systemInstruction }] },
+    // Buat sesi chat baru
+    const chat = ai.chats.create({
+      model: "gemini-2.0-flash",
+      systemInstruction: {
+        role: "system",
+        parts: [{ text: systemInstructionText }], // pastikan `systemInstructionText` sudah didefinisikan sebelumnya
+      },
+      history: formattedHistory,
     });
 
-    if (result.response) {
-      const responseText = result.response.text();
-      res.json({ response: responseText });
-    } else {
-      console.error('Gemini API did not return a valid response structure:', result);
-      res.status(500).json({ error: 'Failed to get a response from Gemini. The response might have been blocked due to safety settings or other reasons.' });
+    // Buat stream dari prompt user
+    const stream = await chat.sendMessageStream({ message: prompt });
+
+    // Set header SSE
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    // Kirim stream ke klien
+    for await (const chunk of stream) {
+      if (chunk && typeof chunk.text === 'function') {
+        const textPart = chunk.text();
+        if (textPart) {
+          res.write(`data: ${JSON.stringify({ text: textPart })}\n\n`);
+        }
+      }
     }
 
+    res.end(); // Akhiri stream
+
   } catch (error) {
-    console.error('Error calling Gemini API:', error);
-    if (error.response && error.response.data) {
-        console.error('Gemini API Error Details:', error.response.data);
-        return res.status(500).json({ error: 'Error communicating with Gemini API.', details: error.response.data });
+    console.error('Error in streaming chat API:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to start chat stream', details: error.message });
+    } else {
+      res.end();
     }
-    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
