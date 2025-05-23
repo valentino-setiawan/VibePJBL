@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import './chat.css'
-
+import '@fontsource/poppins/500.css'; 
 
 // src/App.jsx
 function VibeAiHeader() {
