@@ -13,12 +13,13 @@
   --text-primary: #333333;
   --text-secondary: #8266B6;
   --text-tertiary: #666666;
-  --bg-white: #FFFFFF;
+  --bg-white: #f3f3f3;
   --bg-light: #F8F8F8;
   --bg-dark: #000000; 
   --gradient-main: linear-gradient(90deg, #317EC2, #8266B6);
   --white-muted: rgba(255, 255, 255, 0.7);
   --card-bg: #111111;
+  --message-box: #A4A2A2
 }
 
 body {
@@ -45,7 +46,10 @@ body {
   align-items: flex-start; 
   padding: 0; 
   margin-top: 0; 
-
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: var(--bg-white);
 }
 
 .header-content {

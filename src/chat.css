@@ -2,25 +2,41 @@
     max-width: 800px; 
     margin: 50px auto; 
     padding: 20px; 
-    border: 1px solid #ccc; 
+    border: 1px solid var(--bg-white); 
     border-Radius: 8px; 
     box-shadow: 0 2px 4px rgba(0,0,0,0.1)
 } 
 
+.queryForm {
+    background-color: var(--message-box);
+    border-Radius: 6px; 
+    border: 1px solid var(--bg-dark);
+    display: flex;
+    padding: 1rem;
+}
+
 .formArea {
-    width: 100%; 
+    width: 95%; 
     padding: 10px;
-    margin-Bottom: 10px;
+    margin-right: 1rem;
     border-Radius: 4px; 
-    border: 1px solid #ddd
+    background-color: var(--message-box);
+}
+
+.formArea:focus {
+    outline: 0;
 }
 
 .submitBtn {
-    padding: 10px 20px; 
-    background-Color: #007bff; 
-    color: white; 
+    background: url(./assets/arrow-up.svg);
+    background-repeat: no-repeat;
+    background-position: center;
+    min-width: 3rem;
+    min-height: 3rem;
+    color: var(--bg-white); 
     border: none;
-    border-Radius: 4px;
+    border: 1px solid var(--bg-dark);
+    border-Radius: 60px;
     cursor: pointer
 }
 
@@ -33,6 +49,7 @@
 .chatMsg {
     margin-Bottom: 10px; 
     padding: 8px; 
-    border-Radius: 4px
-
+    border-Radius: 4px;
+    border: 1px solid #252525;
 }
+

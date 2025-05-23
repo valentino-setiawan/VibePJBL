@@ -3,6 +3,28 @@ import './chat.css'
 
 
 // src/App.jsx
+function VibeAiHeader() {
+  return (
+    <header className="vibe-header">
+      <div className="header-content">
+        <div className="header-title-container">
+          <h1 className="vibe-title">Vibe Ai</h1>
+          <img 
+            src="/logo.png" 
+            alt="Vibe Logo" 
+            className="header-logo"
+            width="80" 
+            height="80"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = "/api/placeholder/80/80";
+            }}
+          />
+        </div>
+      </div>
+    </header>
+  )
+}
 
 function Chat() {
   const [prompt, setPrompt] = useState('');
@@ -91,24 +113,13 @@ function Chat() {
   };
 
   return (
+    <div>
+    <VibeAiHeader />
     <div className="chatPage">
       <h1>Gemini AI Assistant (Backend-Powered)</h1>
       <p>System Instruction: "You are a psychiatrist who answers with the best description possible with a limitation of 30 words."</p>
 
-      <form onSubmit={handleSubmit}>
-        <textarea className="formArea"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Enter your query..."
-          rows="4"
-          disabled={loading}
-        />
-        <button className='submitBtn' type="submit" disabled={loading}>
-          {loading ? 'Generating...' : 'Send Message'}
-        </button>
-      </form>
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
 
       {/* Display conversation history */}
       {history.length > 0 && (
@@ -116,13 +127,28 @@ function Chat() {
           <h2>Conversation History:</h2>
           {history.map((msg, index) => (
             <div className="chatMsg" 
-            // style={{background: msg.role === user ? "#e9f5ff" : "#f9f9f9" }}
+            style={{background: msg.role === "user" ? "#badbf7" : "#f9f9f9" }}
              key={index}>
               <strong>{msg.role === 'user' ? 'You:' : 'AI:'}</strong> {msg.text}
             </div>
           ))}
         </div>
-      )}
+      )}      
+      <form className='queryForm' onSubmit={handleSubmit}>
+        <textarea className="formArea"
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder="Enter your query..."
+          // rows="4"
+          disabled={loading}
+        />
+        <button className='submitBtn' type="submit" disabled={loading}>
+          {/* {loading ? 'Generating...' : 'Send Message'} */}
+        </button>
+      </form>
+
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+    </div>
     </div>
   );
 }

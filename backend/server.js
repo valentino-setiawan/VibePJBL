@@ -31,7 +31,7 @@ const ai = new GoogleGenAI({
     apiVersion: 'v1alpha'
 });
 
-const systemInstructionText = "You are a psychiatrist who answers with the best description possible and comforting the user.";
+const systemInstructionText = "You are an assistant who answers with comforting the user and will not use more than 30 words under any circumstances.";
 
 const generationConfig = {
   temperature: 0.9, // Controls randomness
@@ -94,34 +94,14 @@ app.post('/api/chat', async (req, res) => {
       history: formattedHistory,
     });
 
-    // Buat stream dari prompt user
-    const stream = await chat.sendMessageStream({ message: prompt });
+    const result = await chat.sendMessage({ message: prompt });
+    const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    // Set header SSE
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders();
-
-    // Kirim stream ke klien
-    for await (const chunk of stream) {
-      if (chunk && typeof chunk.text === 'function') {
-        const textPart = chunk.text();
-        if (textPart) {
-          res.write(`data: ${JSON.stringify({ text: textPart })}\n\n`);
-        }
-      }
-    }
-
-    res.end(); // Akhiri stream
+    res.json({ response: responseText }); // Send as regular JSON
 
   } catch (error) {
-    console.error('Error in streaming chat API:', error);
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'Failed to start chat stream', details: error.message });
-    } else {
-      res.end();
-    }
+    console.error('Error:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
