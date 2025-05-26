@@ -37,7 +37,7 @@ const generationConfig = {
   temperature: 0.9, // Controls randomness
   topK: 1,          // Consider the top K tokens
   topP: 0.8,        // Nucleus sampling: consider tokens with cumulative probability >= topP
-  maxOutputTokens: 2048, // Max length of the response
+  maxOutputTokens: 30, // Max length of the response
 };
 
 // Safety settings
