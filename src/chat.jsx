@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react'
-import './chat.css'
-import '@fontsource/poppins/500.css'; 
+import { useState, useEffect } from 'react';
+import './chat.css';
+import '@fontsource/poppins/500.css';
 
-// src/App.jsx
 function VibeAiHeader() {
   return (
     <header className="vibe-header">
@@ -23,54 +22,152 @@ function VibeAiHeader() {
         </div>
       </div>
     </header>
-  )
+  );
 }
 
 function Chat() {
   const [prompt, setPrompt] = useState('');
-  const [response, setResponse] = useState('');
-
-  // 1. Initialize history from localStorage or an empty array
   const [history, setHistory] = useState(() => {
     try {
-      const savedHistory = localStorage.getItem('chatHistory'); // Attempt to get saved history
-      // If history exists, parse it; otherwise, return an empty array
+      const savedHistory = localStorage.getItem('chatHistory');
       return savedHistory ? JSON.parse(savedHistory) : [];
     } catch (error) {
-      // Handle potential errors if localStorage is disabled or data is corrupted
       console.error("Failed to parse history from localStorage:", error);
-      return []; // Return empty history in case of error
+      return [];
     }
   });
 
+  // New states for chat history feature
+  const [savedChats, setSavedChats] = useState(() => {
+    try {
+      const saved = localStorage.getItem('savedChats');
+      return saved ? JSON.parse(saved) : {};
+    } catch (error) {
+      console.error("Failed to parse saved chats:", error);
+      return {};
+    }
+  });
+  
+  const [currentChatId, setCurrentChatId] = useState(() => {
+    return localStorage.getItem('currentChatId') || null;
+  });
+  
+  const [showHistorySidebar, setShowHistorySidebar] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // 2. useEffect to save history to localStorage whenever it changes
+  // Save history to localStorage whenever it updates
   useEffect(() => {
     try {
-      // Convert the history array to a JSON string before saving
-      localStorage.setItem('chatHistory', JSON.stringify(history));
+      if (history.length > 0) {
+        localStorage.setItem('chatHistory', JSON.stringify(history));
+      }
     } catch (error) {
       console.error("Failed to save history to localStorage:", error);
     }
-  }, [history]); // Dependency array: this effect runs whenever the 'history' state changes
+  }, [history]);
 
+  // Save current chat ID to localStorage
+  useEffect(() => {
+    if (currentChatId) {
+      localStorage.setItem('currentChatId', currentChatId);
+    }
+  }, [currentChatId]);
+
+  // Save savedChats to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('savedChats', JSON.stringify(savedChats));
+    } catch (error) {
+      console.error("Failed to save chats to localStorage:", error);
+    }
+  }, [savedChats]);
+
+  // Generate chat title from first user message
+  const generateChatTitle = (messages) => {
+    const firstUserMessage = messages.find(msg => msg.role === 'user');
+    if (firstUserMessage) {
+      return firstUserMessage.text.slice(0, 50) + (firstUserMessage.text.length > 50 ? '...' : '');
+    }
+    return 'New Chat';
+  };
+
+  // Save current chat to saved chats
+  const saveCurrentChat = () => {
+    if (history.length === 0) return;
+
+    const chatId = currentChatId || Date.now().toString();
+    const chatTitle = generateChatTitle(history);
+    
+    setSavedChats(prev => ({
+      ...prev,
+      [chatId]: {
+        id: chatId,
+        title: chatTitle,
+        messages: [...history],
+        lastUpdated: new Date().toISOString(),
+        createdAt: prev[chatId]?.createdAt || new Date().toISOString()
+      }
+    }));
+
+    setCurrentChatId(chatId);
+  };
+
+  // Load a saved chat
+  const loadSavedChat = (chatId) => {
+    const savedChat = savedChats[chatId];
+    if (savedChat) {
+      // Save current chat before switching
+      if (history.length > 0) {
+        saveCurrentChat();
+      }
+
+      setHistory(savedChat.messages);
+      setCurrentChatId(chatId);
+      setShowHistorySidebar(false);
+    }
+  };
+
+  // Delete a saved chat
+  const deleteSavedChat = (chatId, e) => {
+    e.stopPropagation();
+    
+    // Confirm before deleting
+    if (!window.confirm('Are you sure you want to delete this chat?')) {
+      return;
+    }
+
+    setSavedChats(prev => {
+      const newSavedChats = { ...prev };
+      delete newSavedChats[chatId];
+      return newSavedChats;
+    });
+
+    // If we're deleting the current chat, clear it
+    if (currentChatId === chatId) {
+      setHistory([]);
+      setCurrentChatId(null);
+      localStorage.removeItem('chatHistory');
+      localStorage.removeItem('currentChatId');
+    }
+  };
+
+  // Submit handler
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!prompt.trim()) return;
+
     setLoading(true);
     setError(null);
 
-    // Create the new message entry for the user
+    // Add user message to history first
     const newUserMessage = { role: 'user', text: prompt };
-
-    // Optimistically update history immediately to show user's message
-    // This provides better UX by making the UI feel snappier
     const updatedHistoryForBackend = [...history, newUserMessage];
-    setHistory(updatedHistoryForBackend); // Update local state for rendering
+    setHistory(updatedHistoryForBackend);
+    setPrompt(''); // Clear input immediately after submit
 
     try {
-      const GEMINI_HOME_ENTERTAINTMENT = 'http://localhost:3001/api/chat'; // Your backend URL
+      const GEMINI_HOME_ENTERTAINTMENT = 'http://localhost:3001/api/chat';
 
       const res = await fetch(GEMINI_HOME_ENTERTAINTMENT, {
         method: 'POST',
@@ -78,81 +175,191 @@ function Chat() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          prompt: prompt,
-          history: updatedHistoryForBackend // Send the updated history to the backend
+          prompt,
+          history: updatedHistoryForBackend,
         }),
       });
 
       if (!res.ok) {
-        // If the backend response is not OK (e.g., 400, 500), throw an error
-        // throw new Error(HTTP error! status: ${res.status});
+        throw new Error(`HTTP error! status: ${res.status}`);
       }
 
-      const data = await res.json(); // Parse the JSON response from the backend
+      const data = await res.json();
       const aiResponseText = data.response;
-      setResponse(aiResponseText); // Update the single AI response state (optional if only using history)
 
-      // Create the new message entry for the AI response
+      // Add AI response to history
       const newAiMessage = { role: 'model', text: aiResponseText };
+      setHistory(prev => [...prev, newAiMessage]);
 
-      // Update history again with the AI's response
-      // This will trigger the useEffect to save the complete new history to localStorage
-      setHistory(prevHistory => [...prevHistory, newAiMessage]);
-
-      setPrompt(''); // Clear the input field after sending
+      // Auto-save after AI response
+      setTimeout(() => {
+        saveCurrentChat();
+      }, 100);
 
     } catch (err) {
       console.error('Error fetching from backend:', err);
       setError('Failed to get response from AI. Please try again.');
-      // Optional: If an error occurs, you might want to revert the last user message
-      // or add an error message to the history. For simplicity, we just show an error.
-      setHistory(history); // Revert history to its state before the failed request
     } finally {
       setLoading(false);
     }
   };
 
+  // Start new chat
+  const handleNewChat = () => {
+    // Save current chat before starting new one
+    if (history.length > 0) {
+      saveCurrentChat();
+    }
+    
+    setHistory([]);
+    setCurrentChatId(null);
+    localStorage.removeItem('chatHistory');
+    localStorage.removeItem('currentChatId');
+  };
+
+  // Get sorted saved chats (most recent first)
+  const getSortedSavedChats = () => {
+    return Object.values(savedChats).sort((a, b) => 
+      new Date(b.lastUpdated) - new Date(a.lastUpdated)
+    );
+  };
+
   return (
     <div>
-    <VibeAiHeader />
-    <div className="chatPage">
-      <h1>VIBE AI. Powered by Gemini</h1>
-
-      {/* Display conversation history */}
-      {history.length > 0 && (
-        <div className="historyBar">
-          <h2>Conversation History:</h2>
-          {history.map((msg, index) => (
-            <div className="chatMsg" 
-            style={{background: msg.role === "user" ? "#badbf7" : "#f9f9f9" }}
-             key={index}>
-              <strong>{msg.role === 'user' ? 'You:' : 'AI:'}</strong> {msg.text}
-            </div>
-          ))}
-        </div>
-      )}      
-      <form className='queryForm' onSubmit={handleSubmit}>
-        <textarea className="formArea"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Enter your query..."
-          // rows="4"
-          disabled={loading}
-          onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault(); // Hindari line break
-            handleSubmit(e);    // Panggil fungsi submit
-          }}}
+      <VibeAiHeader />
+      
+      {/* Overlay for sidebar */}
+      {showHistorySidebar && (
+        <div 
+          className="sidebar-overlay" 
+          onClick={() => setShowHistorySidebar(false)}
         />
-        <button className='submitBtn' type="submit" disabled={loading}>
-          {/* {loading ? 'Generating...' : 'Send Message'} */}
-        </button>
-      </form>
+      )}
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-    </div>
+      {/* History Sidebar */}
+      <div className={`history-sidebar ${showHistorySidebar ? 'sidebar-open' : ''}`}>
+        <div className="sidebar-header">
+          <h3>Chat History</h3>
+          <button 
+            className="sidebar-close-btn"
+            onClick={() => setShowHistorySidebar(false)}
+          >
+            ×
+          </button>
+        </div>
+        
+        <div className="sidebar-content">
+          {getSortedSavedChats().length === 0 ? (
+            <p className="no-chats">No saved chats yet</p>
+          ) : (
+            getSortedSavedChats().map(chat => (
+              <div
+                key={chat.id}
+                className={`history-item ${currentChatId === chat.id ? 'active' : ''}`}
+                onClick={() => loadSavedChat(chat.id)}
+              >
+                <div className="history-item-content">
+                  <div className="history-title">{chat.title}</div>
+                  <div className="history-preview">
+                    {chat.messages.length} messages
+                  </div>
+                  <div className="history-date">
+                    {new Date(chat.lastUpdated).toLocaleDateString()}
+                  </div>
+                </div>
+                <button
+                  className="delete-chat-btn"
+                  onClick={(e) => deleteSavedChat(chat.id, e)}
+                  title="Delete chat"
+                >
+                  🗑️
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="chatPage">
+        <h1>VIBE AI. Powered by Gemini</h1>
+
+        {/* Control buttons */}
+        <div className="chat-controls">
+          <button
+            className="control-btn primary-btn"
+            onClick={() => setShowHistorySidebar(true)}
+          >
+            📋 Chat History ({Object.keys(savedChats).length})
+          </button>
+          
+          {history.length > 0 && (
+            <>
+              <button
+                className="control-btn"
+                onClick={handleNewChat}
+              >
+                ➕ New Chat
+              </button>
+              
+              <button
+                className="control-btn save-btn"
+                onClick={saveCurrentChat}
+              >
+                💾 Save Chat
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Display conversation history */}
+        {history.length > 0 ? (
+          <div className="historyBar">
+            <h2>Current Conversation:</h2>
+            {history.map((msg, index) => (
+              <div
+                className="chatMsg"
+                style={{ background: msg.role === "user" ? "#badbf7" : "#f9f9f9" }}
+                key={index}
+              >
+                <strong>{msg.role === 'user' ? 'You:' : 'AI:'}</strong> {msg.text}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="welcome-message">
+            <p>No conversation yet. Start chatting!</p>
+            {Object.keys(savedChats).length > 0 && (
+              <p className="welcome-suggestion">
+                Or click "📋 Chat History" to continue a previous conversation.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Chat input form */}
+        <form className="queryForm" onSubmit={handleSubmit}>
+          <textarea
+            className="formArea"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Enter your query..."
+            disabled={loading}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
+          />
+          <button className="submitBtn" type="submit" disabled={loading}>
+            {loading ? 'Generating...' : 'Send Message'}
+          </button>
+        </form>
+
+        {error && <p className="error-message">{error}</p>}
+      </div>
     </div>
   );
 }
 
-export default Chat
+export default Chat;
