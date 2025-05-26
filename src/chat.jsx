@@ -116,10 +116,7 @@ function Chat() {
     <div>
     <VibeAiHeader />
     <div className="chatPage">
-      <h1>Gemini AI Assistant (Backend-Powered)</h1>
-      <p>System Instruction: "You are a psychiatrist who answers with the best description possible with a limitation of 30 words."</p>
-
-
+      <h1>VIBE AI. Powered by Gemini</h1>
 
       {/* Display conversation history */}
       {history.length > 0 && (
@@ -141,6 +138,11 @@ function Chat() {
           placeholder="Enter your query..."
           // rows="4"
           disabled={loading}
+          onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault(); // Hindari line break
+            handleSubmit(e);    // Panggil fungsi submit
+          }}}
         />
         <button className='submitBtn' type="submit" disabled={loading}>
           {/* {loading ? 'Generating...' : 'Send Message'} */}
