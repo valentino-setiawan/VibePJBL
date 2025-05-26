@@ -289,6 +289,22 @@
 }
 
 .submitBtn {
+    background: url(./assets/arrow-up.svg);
+    background-repeat: no-repeat;
+    background-position: center;
+    min-width: 3rem;
+    min-height: 3rem;
+    color: var(--bg-white); 
+    border: none;
+    border: 1px solid var(--bg-dark);
+    border-Radius: 60px;
+    cursor: pointer
+}
+
+.submitBtn:hover {
+    background-color: var(--message-box-hl);
+}
+
   min-width: 3rem;
   min-height: 3rem;
   color: var(--bg-white);
