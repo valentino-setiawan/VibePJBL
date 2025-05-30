@@ -1,155 +1,120 @@
 // server.js
-// Anda mungkin perlu menambahkan "type": "module" ke package.json Anda agar ini berfungsi
-// atau ganti nama file Anda menjadi server.mjs
-
-import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
-// Setup
 dotenv.config();
 
-// Initialize Express app
 const app = express();
 const port = process.env.PORT || 3001;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Get API Key from environment variables
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
 if (!GEMINI_API_KEY) {
-  console.error("API KEY tidak ditemukan. Beritahu programmer untuk memperbaikinya.");
+  console.error("API KEY not found");
   process.exit(1);
 }
 
-const ai = new GoogleGenAI({
-    apiKey: GEMINI_API_KEY,
-    // apiVersion: 'v1alpha' // Pertimbangkan untuk menghapus jika tidak diperlukan secara spesifik oleh SDK versi Anda
-});
+const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
-// System Instruction
+// System instruction with thinking strategy
 const systemInstructionText = `
-You are a compassionate psychiatrist. Every reply must feel calming, insightful, and emotionally supportive.
-Each reply MUST be a **complete sentence**, and NEVER exceed 30 words under ANY circumstances.
-Use soft, reflective language and avoid technical jargon.`;
-const systemInstructionConfig = { // Dibungkus dalam objek agar lebih rapi
+You are a helpful assistant. Follow this process for every response:
+1. THINK: Analyze the query, consider context, and plan key points
+2. CONDENSE: Summarize your thoughts into ONE sentence
+3. ENFORCE: Never exceed 30 words. Prioritize clarity over completeness.
+Example thought process for "Best Paris attractions?": 
+THINK: "Eiffel Tower iconic but crowded, Louvre has art, Seine River romantic" → 
+CONDENSE: "Top Paris sights: Eiffel Tower, Louvre Museum, Seine River cruises, and Montmartre's charm."`;
+const systemInstructionConfig = {
   role: "system",
   parts: [{ text: systemInstructionText }],
 };
 
-// Generation Configuration
 const generationConfig = {
-  temperature: 0.5,        // Mengontrol keacakan
-  topK: 1,                 // Mempertimbangkan token K teratas
-  topP: 0.95,             // Nucleus sampling: pertimbangkan token dengan probabilitas kumulatif >= topP
-  maxOutputTokens: 100,    // Setting higher token limit to accommodate 30 words
+  temperature: 0.4,
+  topK: 1,
+  topP: 0.95,
+  maxOutputTokens: 150,  // Allow space for thinking
 };
-
-// Safety Settings
-const safetySettings = [
-  {
-    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-  },
-  {
-    category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-  },
-  {
-    category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-  },
-  {
-    category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-    threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-  },
-];
 
 app.post('/api/chat', async (req, res) => {
   try {
     const { prompt, history } = req.body;
+    if (!prompt) return res.status(400).json({ error: 'Prompt required' });
 
-    if (!prompt) {
-      return res.status(400).json({ error: 'Prompt is required' });
-    }
-
-    // Siapkan history dalam format [{ role, parts: [{ text }] }]
+    // Format history
     const formattedHistory = [];
-    if (history && Array.isArray(history)) {
-      for (const msg of history) {
-        if (msg.sender && msg.text) { // Format dari frontend Anda
+    if (history?.length) {
+      history.forEach(msg => {
+        if (msg.sender && msg.text) {
           formattedHistory.push({
             role: msg.sender === 'user' ? 'user' : 'model',
             parts: [{ text: msg.text }],
           });
-        } else if (msg.role && msg.parts) { // Jika history sudah dalam format SDK
+        } else if (msg.role && msg.parts) {
           formattedHistory.push(msg);
         }
-      }
+      });
     }
 
-    // Buat sesi chat baru dengan semua konfigurasi
+    // Create chat session with latest model
     const chat = ai.chats.create({
-      model: "gemini-2.0-flash-001", // Pertimbangkan menggunakan model terbaru jika tersedia
+      model: "gemini-2.5-flash-preview-05-20",  // Use latest Flash model
       systemInstruction: systemInstructionConfig,
       history: formattedHistory,
-      generationConfig: generationConfig,   // Diterapkan di sini
-      safetySettings: safetySettings,       // Diterapkan di sini
+      generationConfig,
     });
 
-    const result = await chat.sendMessage({ message: prompt }); // Cukup kirim prompt
-    const candidate = result.candidates?.[0];
-    let responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || result.response?.text() || '';
-    const finishReason = candidate?.finishReason;
-    const tokenCount = candidate?.tokenCount; // Jika tersedia
-
-    // Enforce 30-word limit by truncating if necessary
+    const result = await chat.sendMessage({ 
+      message: `${prompt}\n\n[THINK then CONDENSE to <30 words]` 
+    });
+    
+    let responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || 
+                      result.response?.text() || 
+                      "I'll need a moment to think about that";
+    
+    // Extract condensed response if thinking appears
+    if (responseText.includes("CONDENSE:")) {
+      responseText = responseText.split("CONDENSE:")[1]?.trim() || responseText;
+    }
+    
+    // Final enforcement
+    responseText = responseText.trim();
     const words = responseText.split(/\s+/).filter(Boolean);
-
+    
     if (words.length > 30) {
-      const textUpTo30Words = words.slice(0, 30).join(' ');
-
-      const match = textUpTo30Words.match(/^(.*?[.!?])\s/);
-
-      if (match && match[1]) {
-        responseText = match[1];
-      } else {
-        responseText = textUpTo30Words;
-      }
+      // Find natural cutoff point
+      const truncated = words.slice(0, 30);
+      const lastValidEnd = Math.max(
+        truncated.join(' ').lastIndexOf('. '),
+        truncated.join(' ').lastIndexOf('? '),
+        truncated.join(' ').lastIndexOf('! ')
+      );
+      
+      responseText = lastValidEnd > 0 
+        ? truncated.join(' ').substring(0, lastValidEnd + 1)
+        : truncated.join(' ') + '...';
+    }
+    
+    // Ensure complete sentence
+    if (!/[.!?]$/.test(responseText)) {
+      responseText = responseText.replace(/[,;]$/, '.');
     }
 
-    console.log("Finish Reason:", finishReason);
-    console.log("Token Count (from response):", tokenCount); // Berguna jika finishReason bukan MAX_TOKENS
-    console.log("Generated Word Count:", responseText.split(/\s+/).filter(Boolean).length);
-
-    if (!responseText && result.response && typeof result.response.text === 'function') {
-        // Jika menggunakan struktur respons yang lebih baru
-        console.warn("Menggunakan result.response.text()");
-    } else if (!responseText) {
-        console.warn("Respons teks kosong atau struktur tidak dikenal:", JSON.stringify(result, null, 2));
-    }
-
+    console.log("Final response:", responseText);
+    console.log("Word count:", responseText.split(/\s+/).length);
     res.json({ response: responseText });
 
   } catch (error) {
-    console.error('Error processing chat:', error);
-    // Cek apakah error dari API Google dan berikan detail jika ada
-    if (error.response && error.response.data) {
-        console.error('API Error Details:', error.response.data);
-        return res.status(500).json({ error: error.message, details: error.response.data });
-    }
+    console.error('Error:', error);
     res.status(500).json({ error: error.message });
   }
-
-
 });
 
-// Start the server
 app.listen(port, () => {
-  console.log(`Backend server listening on port ${port}`);
-  console.log(`Pastikan aplikasi React Anda memanggil http://localhost:${port}/api/chat`);
+  console.log(`Server ready: http://localhost:${port}/api/chat`);
 });
