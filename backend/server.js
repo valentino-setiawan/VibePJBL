@@ -31,13 +31,78 @@ const ai = new GoogleGenAI({
     apiVersion: 'v1alpha'
 });
 
-const systemInstructionText = "You are an assistant who answers with comforting the user and will not use more than 30 words under any circumstances.";
+// Function to extract key words from response
+function extractKeyWords(text, maxWords = 30) {
+  // Remove common stop words in Indonesian and English
+  const stopWords = new Set([
+    'yang', 'dan', 'di', 'ke', 'dari', 'untuk', 'dengan', 'pada', 'dalam', 'adalah', 'akan', 'atau',
+    'juga', 'tidak', 'sudah', 'ini', 'itu', 'ada', 'bisa', 'dapat', 'harus', 'saya', 'kamu', 'mereka',
+    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are',
+    'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+    'should', 'may', 'might', 'can', 'must', 'shall', 'this', 'that', 'these', 'those', 'i', 'you', 'he',
+    'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them'
+  ]);
+
+  // Split text into words and clean them
+  const words = text
+    .toLowerCase()
+    .replace(/[^\w\s]/g, ' ') // Remove punctuation
+    .split(/\s+/)
+    .filter(word => word.length > 2 && !stopWords.has(word));
+
+  // Count word frequency
+  const wordCount = {};
+  words.forEach(word => {
+    wordCount[word] = (wordCount[word] || 0) + 1;
+  });
+
+  // Sort by frequency and get top words
+  const keyWords = Object.entries(wordCount)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, maxWords)
+    .map(([word]) => word);
+
+  return keyWords.join(' ');
+}
+
+// Function to create concise summary
+function createConciseSummary(text, maxWords = 30) {
+  // Split into sentences
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  
+  if (sentences.length === 0) return text;
+
+  // If already short enough, return as is
+  const wordCount = text.split(/\s+/).length;
+  if (wordCount <= maxWords) return text;
+
+  // Take first sentence and key points
+  let summary = sentences[0].trim();
+  let currentWordCount = summary.split(/\s+/).length;
+
+  // Add more sentences if space allows
+  for (let i = 1; i < sentences.length && currentWordCount < maxWords; i++) {
+    const nextSentence = sentences[i].trim();
+    const nextWordCount = nextSentence.split(/\s+/).length;
+    
+    if (currentWordCount + nextWordCount <= maxWords) {
+      summary += '. ' + nextSentence;
+      currentWordCount += nextWordCount;
+    } else {
+      break;
+    }
+  }
+
+  return summary;
+}
+
+const systemInstructionText = "You are an assistant who answers with comforting the user. Be concise but helpful. Focus on the most important information.";
 
 const generationConfig = {
   temperature: 0.9, // Controls randomness
   topK: 1,          // Consider the top K tokens
   topP: 0.8,        // Nucleus sampling: consider tokens with cumulative probability >= topP
-  maxOutputTokens: 30, // Max length of the response
+  maxOutputTokens: 100, // Increased to allow for filtering
 };
 
 // Safety settings
@@ -62,7 +127,7 @@ const safetySettings = [
 
 app.post('/api/chat', async (req, res) => {
   try {
-    const { prompt, history } = req.body;
+    const { prompt, history, filterMode = 'summary' } = req.body;
 
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
@@ -89,15 +154,55 @@ app.post('/api/chat', async (req, res) => {
       model: "gemini-2.0-flash",
       systemInstruction: {
         role: "system",
-        parts: [{ text: systemInstructionText }], // pastikan `systemInstructionText` sudah didefinisikan sebelumnya
+        parts: [{ text: systemInstructionText }],
       },
       history: formattedHistory,
+      generationConfig,
+      safetySettings,
     });
 
     const result = await chat.sendMessage({ message: prompt });
-    const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    let responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    res.json({ response: responseText }); // Send as regular JSON
+    // Apply filtering based on mode
+    let filteredResponse;
+    if (filterMode === 'keywords') {
+      filteredResponse = extractKeyWords(responseText, 30);
+    } else {
+      filteredResponse = createConciseSummary(responseText, 30);
+    }
+
+    res.json({ 
+      response: filteredResponse,
+      originalResponse: responseText, // Include original for debugging
+      wordCount: filteredResponse.split(/\s+/).length
+    });
+
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Endpoint untuk mendapatkan statistik response
+app.post('/api/analyze', async (req, res) => {
+  try {
+    const { text } = req.body;
+    
+    if (!text) {
+      return res.status(400).json({ error: 'Text is required' });
+    }
+
+    const wordCount = text.split(/\s+/).length;
+    const keyWords = extractKeyWords(text, 10);
+    const summary = createConciseSummary(text, 30);
+
+    res.json({
+      originalWordCount: wordCount,
+      keyWords,
+      summary,
+      summaryWordCount: summary.split(/\s+/).length
+    });
 
   } catch (error) {
     console.error('Error:', error);
@@ -109,4 +214,5 @@ app.post('/api/chat', async (req, res) => {
 app.listen(port, () => {
   console.log(`Backend server listening on port ${port}`);
   console.log(`Ensure your React app calls http://localhost:${port}/api/chat`);
+  console.log(`New feature: 30-word filtering with modes: 'summary' (default) or 'keywords'`);
 });
