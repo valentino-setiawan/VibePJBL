@@ -55,6 +55,13 @@ function Chat() {
   const [showHistorySidebar, setShowHistorySidebar] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  
+  // New states for 30 words filter feature
+  const [filterMode, setFilterMode] = useState(() => {
+    return localStorage.getItem('filterMode') || 'summary';
+  });
+  const [showFilterOptions, setShowFilterOptions] = useState(false);
+  const [showFullResponse, setShowFullResponse] = useState({});
 
   // Save history to localStorage whenever it updates
   useEffect(() => {
@@ -82,6 +89,11 @@ function Chat() {
       console.error("Failed to save chats to localStorage:", error);
     }
   }, [savedChats]);
+
+  // Save filter mode to localStorage
+  useEffect(() => {
+    localStorage.setItem('filterMode', filterMode);
+  }, [filterMode]);
 
   // Generate chat title from first user message
   const generateChatTitle = (messages) => {
@@ -152,6 +164,14 @@ function Chat() {
     }
   };
 
+  // Toggle full response view
+  const toggleFullResponse = (messageIndex) => {
+    setShowFullResponse(prev => ({
+      ...prev,
+      [messageIndex]: !prev[messageIndex]
+    }));
+  };
+
   // Submit handler
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -177,6 +197,7 @@ function Chat() {
         body: JSON.stringify({
           prompt,
           history: updatedHistoryForBackend,
+          filterMode: filterMode, // Send filter mode to backend
         }),
       });
 
@@ -186,9 +207,17 @@ function Chat() {
 
       const data = await res.json();
       const aiResponseText = data.response;
+      const originalResponse = data.originalResponse;
+      const wordCount = data.wordCount;
 
-      // Add AI response to history
-      const newAiMessage = { role: 'model', text: aiResponseText };
+      // Add AI response to history with additional metadata
+      const newAiMessage = { 
+        role: 'model', 
+        text: aiResponseText,
+        originalText: originalResponse,
+        wordCount: wordCount,
+        filterMode: filterMode
+      };
       setHistory(prev => [...prev, newAiMessage]);
 
       // Auto-save after AI response
@@ -213,6 +242,7 @@ function Chat() {
     
     setHistory([]);
     setCurrentChatId(null);
+    setShowFullResponse({});
     localStorage.removeItem('chatHistory');
     localStorage.removeItem('currentChatId');
   };
@@ -222,6 +252,15 @@ function Chat() {
     return Object.values(savedChats).sort((a, b) => 
       new Date(b.lastUpdated) - new Date(a.lastUpdated)
     );
+  };
+
+  // Get filter mode display text
+  const getFilterModeText = () => {
+    switch(filterMode) {
+      case 'summary': return '📝 Ringkasan';
+      case 'keywords': return '🔑 Kata Kunci';
+      default: return '📝 Ringkasan';
+    }
   };
 
   return (
@@ -292,6 +331,62 @@ function Chat() {
             📋 Chat History ({Object.keys(savedChats).length})
           </button>
           
+          {/* Filter Mode Toggle */}
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <button
+              className="control-btn"
+              onClick={() => setShowFilterOptions(!showFilterOptions)}
+            >
+              {getFilterModeText()} ⚙️
+            </button>
+            
+            {showFilterOptions && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: '0',
+                background: 'white',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                padding: '8px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                zIndex: 1000,
+                minWidth: '150px'
+              }}>
+                <div 
+                  style={{ 
+                    padding: '8px 12px', 
+                    cursor: 'pointer',
+                    backgroundColor: filterMode === 'summary' ? '#e3f2fd' : 'transparent',
+                    borderRadius: '4px',
+                    fontSize: '14px'
+                  }}
+                  onClick={() => {
+                    setFilterMode('summary');
+                    setShowFilterOptions(false);
+                  }}
+                >
+                  📝 Ringkasan (30 kata)
+                </div>
+                <div 
+                  style={{ 
+                    padding: '8px 12px', 
+                    cursor: 'pointer',
+                    backgroundColor: filterMode === 'keywords' ? '#e3f2fd' : 'transparent',
+                    borderRadius: '4px',
+                    fontSize: '14px'
+                  }}
+                  onClick={() => {
+                    setFilterMode('keywords');
+                    setShowFilterOptions(false);
+                  }}
+                >
+                  🔑 Kata Kunci (30 kata)
+                </div>
+              </div>
+            )}
+          </div>
+          
           {history.length > 0 && (
             <>
               <button
@@ -321,13 +416,55 @@ function Chat() {
                 style={{ background: msg.role === "user" ? "#badbf7" : "#f9f9f9" }}
                 key={index}
               >
-                <strong>{msg.role === 'user' ? 'You:' : 'AI:'}</strong> {msg.text}
+                <strong>{msg.role === 'user' ? 'You:' : 'AI:'}</strong> 
+                
+                {msg.role === 'model' && msg.originalText ? (
+                  <div>
+                    <div style={{ marginBottom: '8px' }}>
+                      {showFullResponse[index] ? msg.originalText : msg.text}
+                    </div>
+                    
+                    <div style={{ 
+                      fontSize: '12px', 
+                      color: '#666', 
+                      marginBottom: '8px',
+                      fontStyle: 'italic'
+                    }}>
+                      {showFullResponse[index] ? 
+                        `Respons lengkap` : 
+                        `${msg.filterMode === 'summary' ? 'Ringkasan' : 'Kata kunci'} (${msg.wordCount || 0} kata)`
+                      }
+                    </div>
+                    
+                    {msg.originalText !== msg.text && (
+                      <button
+                        style={{
+                          background: 'none',
+                          border: '1px solid #007bff',
+                          color: '#007bff',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                        onClick={() => toggleFullResponse(index)}
+                      >
+                        {showFullResponse[index] ? 'Tampilkan Ringkasan' : 'Tampilkan Lengkap'}
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <span> {msg.text}</span>
+                )}
               </div>
             ))}
           </div>
         ) : (
           <div className="welcome-message">
             <p>No conversation yet. Start chatting!</p>
+            <p style={{ fontSize: '14px', color: '#666', marginTop: '8px' }}>
+              Mode saat ini: <strong>{getFilterModeText()}</strong> - AI akan memberikan jawaban dalam 30 kata penting
+            </p>
             {Object.keys(savedChats).length > 0 && (
               <p className="welcome-suggestion">
                 Or click "📋 Chat History" to continue a previous conversation.
@@ -342,7 +479,7 @@ function Chat() {
             className="formArea"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Enter your query..."
+            placeholder={`Enter your query... (Mode: ${getFilterModeText()})`}
             disabled={loading}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
