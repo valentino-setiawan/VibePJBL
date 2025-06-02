@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, Routes, Route } from 'react-router-dom'
+import { Link, Routes, Route, useNavigate } from 'react-router-dom'
 import Chat from './chat'
 import './App.css'
 import '@fontsource/poppins/500.css';
@@ -17,9 +17,78 @@ function App() {
           </>
         } />
         <Route path="/chat" element={<Chat />} />
+        {/* Route 404 - harus di paling bawah */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </div>
   )
+}
+
+// Komponen 404 Page
+// Ganti komponen NotFoundPage di App.jsx dengan yang ini:
+
+function NotFoundPage() {
+  const navigate = useNavigate();
+
+  const handleGoHome = () => {
+    navigate('/');
+  };
+
+  const handleGoBack = () => {
+    navigate(-1);
+  };
+
+  return (
+    <div className="not-found-page">
+      <div className="not-found-container">
+        {/* Decorative Elements */}
+        <div className="decoration decoration-1"></div>
+        <div className="decoration decoration-2"></div>
+        <div className="decoration decoration-3"></div>
+
+        {/* Logo */}
+        <div className="not-found-logo">
+          <h1 className="not-found-title">
+            Vibe Ai
+            <span className="logo-dot"></span>
+          </h1>
+        </div>
+
+        {/* 404 Number */}
+        <div className="error-number">
+          <h2 className="error-404">404</h2>
+        </div>
+
+        {/* Status */}
+        <div className="error-status">
+          <p className="status-text">Not Found</p>
+        </div>
+
+        {/* Indonesian Messages */}
+        <div className="error-messages">
+          <h3 className="main-message">Halaman Tidak Ada Cuy......</h3>
+          <p className="sub-message">Kembali Ke Halaman Utama Cuy......</p>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="action-buttons">
+          <button onClick={handleGoHome} className="btn-primary">
+            🏠 Kembali ke Beranda
+          </button>
+          
+          <button onClick={handleGoBack} className="btn-secondary">
+            ← Halaman Sebelumnya
+          </button>
+        </div>
+
+        {/* Additional Info */}
+        <div className="additional-info">
+          <p>Halaman yang Anda cari mungkin telah dipindahkan, dihapus, atau tidak pernah ada.</p>
+          <p>Silakan periksa URL atau kembali ke halaman utama.</p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function VibeAiHeader() {
@@ -117,7 +186,7 @@ function Hero() {
       if (!isAnimating) {
         changeSlide((currentImage + 1) % images.length);
       }
-    }, 4000);
+    }, 1500);
     
     return () => clearInterval(interval);
   }, [currentImage, images.length, isAnimating]);
