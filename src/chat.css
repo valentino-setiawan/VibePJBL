@@ -302,9 +302,7 @@
 }
 
 .submitBtn:hover {
-    background-color: var(--message-box-hl);
-}
-
+  background-color: var(--message-box-hl);
   min-width: 3rem;
   min-height: 3rem;
   color: var(--bg-white);
