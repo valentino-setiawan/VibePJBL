@@ -257,9 +257,7 @@ function Chat() {
   // Get filter mode display text
   const getFilterModeText = () => {
     switch(filterMode) {
-      case 'summary': return '📝 Ringkasan';
-      case 'keywords': return '🔑 Kata Kunci';
-      default: return '📝 Ringkasan';
+      
     }
   };
 
@@ -337,27 +335,18 @@ function Chat() {
               className="control-btn"
               onClick={() => setShowFilterOptions(!showFilterOptions)}
             >
-              {getFilterModeText()} ⚙️
+              {getFilterModeText()} 
             </button>
             
             {showFilterOptions && (
               <div style={{
-                position: 'absolute',
-                top: '100%',
-                left: '0',
-                background: 'white',
-                border: '1px solid #ddd',
-                borderRadius: '8px',
-                padding: '8px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                zIndex: 1000,
-                minWidth: '150px'
+               
               }}>
                 <div 
                   style={{ 
                     padding: '8px 12px', 
                     cursor: 'pointer',
-                    backgroundColor: filterMode === 'summary' ? '#e3f2fd' : 'transparent',
+                    backgroundColor: filterMode === 'summary' ? '#e3f2fd' : 'transparent  ',
                     borderRadius: '4px',
                     fontSize: '14px'
                   }}
@@ -366,7 +355,7 @@ function Chat() {
                     setShowFilterOptions(false);
                   }}
                 >
-                  📝 Ringkasan (30 kata)
+                 
                 </div>
                 <div 
                   style={{ 
@@ -381,7 +370,7 @@ function Chat() {
                     setShowFilterOptions(false);
                   }}
                 >
-                  🔑 Kata Kunci (30 kata)
+                 
                 </div>
               </div>
             )}
