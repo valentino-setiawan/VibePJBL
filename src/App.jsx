@@ -76,7 +76,7 @@ function Hero() {
   const [isAnimating, setIsAnimating] = useState(false);
   
   const images = [
-    "/1.jpg", 
+    "/1.png", 
     "/2.png", 
     "/3.png",
   ];
@@ -134,10 +134,10 @@ function Hero() {
         <div className="hero-text">
           <h2 className="hero-title">
             <span className="title-first-line">
-              <span className="blue-text">Berpikir</span> <span className="purple-text">Kritis.</span>
+              <span className="blue-text">Menjawab</span> <span className="purple-text">Deskriptif</span>
             </span>
             <span className="title-second-line">
-              <span className="purple-text">Dengan</span> <span className="blue-text">30 Kata.</span>
+              <span className="purple-text">Dengan</span> <span className="blue-text">Singkat</span>
             </span>
           </h2>
           <p className="hero-subtitle">Vibe AI – Teman ngobrol santai yang mikir bareng kamu.</p>
