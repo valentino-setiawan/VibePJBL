@@ -35,7 +35,7 @@ const systemInstructionConfig = {
 };
 
 const generationConfig = {
-  temperature: 0.4,
+  temperature: 0.7,
   topK: 1,
   topP: 0.95,
   maxOutputTokens: 150,  // Allow space for thinking

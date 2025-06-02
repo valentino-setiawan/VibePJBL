@@ -256,12 +256,11 @@
 
 /* Query Form */
 .queryForm {
-  background-color: var(--message-box);
+  background-color: var(--bg-white);
   border-radius: 12px;
   border: 1px solid var(--border-color);
   display: flex;
   padding: 1rem;
-  align-items: flex-end;
   gap: 1rem;
   margin-top: auto;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
@@ -289,25 +288,12 @@
 }
 
 .submitBtn {
-    background: url(./assets/arrow-up.svg);
-    background-repeat: no-repeat;
-    background-position: center;
-    min-width: 3rem;
-    min-height: 3rem;
-    color: var(--bg-white); 
-    border: none;
-    border: 1px solid var(--bg-dark);
-    border-Radius: 60px;
-    cursor: pointer
-}
-
-.submitBtn:hover {
-  background-color: var(--message-box-hl);
   min-width: 3rem;
   min-height: 3rem;
   color: var(--bg-white);
   border: 1px solid var(--primary-color);
-  border-radius: 50%;
+  border-radius: 8%;
+  padding: 8px;
   cursor: pointer;
   background-color: var(--primary-color);
   transition: all 0.3s ease;
