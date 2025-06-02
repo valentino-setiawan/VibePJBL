@@ -278,7 +278,6 @@ body {
 
 .title-second-line {
   display: block;
-  margin-left: clamp(20px, 5vw, 80px);
   animation: fadeInUp 1s ease-out 0.8s both;
 }
 
