@@ -19,8 +19,6 @@
   --bg-dark: #000000; 
   --gradient-main: linear-gradient(90deg, #317EC2, #8266B6);
   --white-muted: rgba(255, 255, 255, 0.7);
-  --message-box: #666666;
-  --message-box-hl: hsl(360 1% 50%);
   --card-bg: #111111;
 }
 
@@ -820,5 +818,273 @@ body {
   .open-ai-button {
     padding: 8px 20px;
     font-size: 14px;
+  }
+}
+/* 404 Page Styles - Tambahkan ke App.css */
+
+.not-found-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8f4ff 0%, #ffffff 50%, #fff0f8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.not-found-container {
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+  position: relative;
+}
+
+/* Logo Section */
+.not-found-logo {
+  margin-bottom: 40px;
+}
+
+.not-found-title {
+  font-size: 3rem;
+  font-weight: 700;
+  background: linear-gradient(45deg, #8b5cf6, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  margin: 0;
+  position: relative;
+}
+
+.logo-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(45deg, #8b5cf6, #ec4899);
+  border-radius: 50%;
+  margin-left: 8px;
+  margin-bottom: 4px;
+  vertical-align: middle;
+}
+
+/* 404 Number */
+.error-number {
+  margin-bottom: 30px;
+}
+
+.error-404 {
+  font-size: 8rem;
+  font-weight: 900;
+  background: linear-gradient(45deg, #8b5cf6, #3b82f6, #6366f1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  line-height: 1;
+  margin: 0;
+  text-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+}
+
+/* Status Text */
+.error-status {
+  margin-bottom: 40px;
+}
+
+.status-text {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #8b5cf6;
+  margin: 0;
+}
+
+/* Indonesian Messages */
+.error-messages {
+  margin-bottom: 50px;
+}
+
+.main-message {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #3b82f6;
+  margin: 0 0 15px 0;
+  line-height: 1.2;
+}
+
+.sub-message {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #8b5cf6;
+  margin: 0;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  align-items: center;
+  margin-bottom: 60px;
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, #8b5cf6, #ec4899);
+  color: white;
+  border: none;
+  padding: 15px 40px;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 200px;
+  justify-content: center;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: #8b5cf6;
+  border: 2px solid #8b5cf6;
+  padding: 13px 38px;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 200px;
+  justify-content: center;
+}
+
+.btn-secondary:hover {
+  background: #8b5cf6;
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Decorative Elements */
+.decoration {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: pulse 2s infinite;
+}
+
+.decoration-1 {
+  width: 80px;
+  height: 80px;
+  background: rgba(139, 92, 246, 0.2);
+  top: 80px;
+  left: 80px;
+  animation-delay: 0s;
+}
+
+.decoration-2 {
+  width: 60px;
+  height: 60px;
+  background: rgba(236, 72, 153, 0.2);
+  bottom: 80px;
+  right: 80px;
+  animation-delay: 1s;
+}
+
+.decoration-3 {
+  width: 50px;
+  height: 50px;
+  background: rgba(59, 130, 246, 0.2);
+  top: 50%;
+  left: 40px;
+  animation-delay: 0.5s;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+/* Additional Info */
+.additional-info {
+  margin-top: 60px;
+  color: #6b7280;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.additional-info p {
+  margin: 8px 0;
+}
+
+/* Responsive Design */
+@media (min-width: 640px) {
+  .action-buttons {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .not-found-title {
+    font-size: 2.5rem;
+  }
+  
+  .error-404 {
+    font-size: 6rem;
+  }
+  
+  .main-message {
+    font-size: 2rem;
+  }
+  
+  .sub-message {
+    font-size: 1rem;
+  }
+  
+  .decoration-1,
+  .decoration-2,
+  .decoration-3 {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .not-found-title {
+    font-size: 2rem;
+  }
+  
+  .error-404 {
+    font-size: 4.5rem;
+  }
+  
+  .main-message {
+    font-size: 1.5rem;
+  }
+  
+  .status-text {
+    font-size: 1.2rem;
+  }
+  
+  .btn-primary,
+  .btn-secondary {
+    min-width: 180px;
+    padding: 12px 30px;
+    font-size: 1rem;
   }
 }
