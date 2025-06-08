@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "concurrently \"npm run dev\" \"node backend/server.js\"",
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "concurrently \"vite\" \"node backend/server.js\"",
+    "build": "concurrently \"vite build\" \"node backend/server.js\"",
     "lint": "eslint .",
     "preview": "vite preview"
   },

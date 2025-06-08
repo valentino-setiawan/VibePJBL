@@ -26,6 +26,12 @@ function VibeAiHeader() {
 }
 
 function Chat() {
+  const startServer = import.meta.env.VITE_START_SERVER;
+  const startServers = import.meta.env.VITE_API_URL;
+
+    useEffect(() => {
+    console.log("Backend URL:", startServers); // Log the API URL
+  }, [startServers])
   const [prompt, setPrompt] = useState('');
   const [history, setHistory] = useState(() => {
     try {
